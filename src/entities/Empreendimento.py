@@ -1,8 +1,9 @@
 import time
+from typing import Union
 
 class LocalContact:
     """Local Owner Class"""
-    def __init__(self, nome: str, telefone: str | None, celular: str | None, cresci: str, tier: str | None = None, ):
+    def __init__(self, nome: str, telefone: Union[str, None], celular: Union[str, None], cresci: str, tier: Union[str, None] = None, ):
         self.nome = nome
         self.telefone = telefone
         self.celular = celular

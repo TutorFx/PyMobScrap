@@ -24,7 +24,7 @@ def get_free_proxy_list_net():
             proxy = {
               'ip': columns[0].text,
               'port': columns[1].text,
-              'type': 'https' if columns[6].text == 'yes' else 'http'
+              'kind': 'https' if columns[6].text == 'yes' else 'http'
             }
             proxies.append(proxy)
     return proxies
@@ -49,7 +49,7 @@ def get_free_proxy_cz():
             proxy = {
               'ip': ip,
               'port': columns[1],
-              'type': columns[2].lower()
+              'kind': columns[2].lower()
             }
             print(proxy)
             proxies.append(proxy)

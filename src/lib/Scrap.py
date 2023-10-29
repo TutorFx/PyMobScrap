@@ -3,6 +3,7 @@ from entities.Empreendimento import Local, LocalContact
 from entities.Proxy import Proxy
 import utils.Repository as Repository
 from threading import Thread, Lock
+from concurrent.futures import ThreadPoolExecutor
 import random
 
 class GerenciadorDeLocais:
@@ -116,38 +117,42 @@ class ProxyCollector:
 
         return random.choice(self.proxies)
     
-    def scrap_proxies(self, limit=10):
-        
-        try:
-            for proxy in Repository.get_free_proxy_list_net():
-                test_proxy = Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("type"))
-                self.testing_lane.append(test_proxy)
-        except requests.exceptions.RequestException:
-            print("Erro ao atualizar lista 1.")
+    def scrap_proxies(self):
 
         try:
             for proxy in Repository.get_free_proxy_cz():
-                test_proxy = Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("type"))
+                test_proxy = Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind"))
                 self.testing_lane.append(test_proxy)
         except requests.exceptions.RequestException:
-            print("Erro ao atualizar lista 2.")
+            print("Erro ao atualizar proxies de http://free-proxy-list.net/")
+        
+        try:
+            for proxy in Repository.get_free_proxy_list_net():
+                test_proxy = Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind"))
+                self.testing_lane.append(test_proxy)
+        except requests.exceptions.RequestException:
+            print("Erro ao atualizar proxies de http://free-proxy.cz/")
 
-        for proxy in self.testing_lane:
-            if len(self.proxies) >= limit:
-                break
-            if not isinstance(proxy, Proxy):
-                continue
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            executor.map(self.validate_proxies, self.testing_lane)
 
-            try:
-                requests.get("https://api64.ipify.org", proxies={ "https": proxy.get(), "http": proxy.get() }, timeout=1)
-                self.add_proxy(proxy)
-                print(f"Proxy adicionado. {proxy.get()}")
-            except requests.exceptions.Timeout:
-                print(f"Proxy lento removido. {proxy.get()}")
-            except requests.exceptions.ConnectionError:
-                print(f"Proxy não funcional removido. {proxy.get()}")
+        #while len(self.testing_lane) > 0 and proxies
                 
+    def validate_proxies(self, proxy: Proxy):
 
+        try:
+            requests.get("https://api64.ipify.org", proxies={ "https": proxy.get(), "http": proxy.get() }, timeout=3)
+            with self.lock:
+                print(f"Proxy adicionado. {proxy.get()}")
+                self.add_proxy(proxy)
+        except requests.exceptions.Timeout:
+            with self.lock:
+                print(f"Proxy lento removido. {proxy.get()}")
+                self.testing_lane.remove(proxy)
+        except requests.exceptions.ConnectionError:
+            with self.lock:
+                print(f"Proxy não funcional removido. {proxy.get()}")
+                self.testing_lane.remove(proxy)
     
     def __str__(self) -> str:
         return f'Existem no total {len(self.proxies)} proxies armazenados.'
