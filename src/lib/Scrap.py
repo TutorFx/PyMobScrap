@@ -23,6 +23,7 @@ class GerenciadorDeLocais:
             self.add_local(local)
 
     def get_locais(self):
+        print(f"Em um total existem {len(self.locais)} locais")
         return self.locais
     
     def __str__(self) -> str:
@@ -42,9 +43,9 @@ class ColetorDeLocais:
         # Aqui você pode adicionar a lógica para obter os objetos Local de uma fonte
         # Por enquanto, vamos retornar uma lista vazia
         locais = []
-        proxy = self.proxy_collector.get_random_proxy()
 
         for i in range(amount):
+            proxy = self.proxy_collector.get_random_proxy()
 
             try:
                 if (fonte == "vivareal"):
@@ -82,7 +83,7 @@ class ColetorDeLocais:
         print(f'Foram coletados {len(locais)} locais de {fonte}')
         return self.gerenciador.add_locais(locais)
 
-    def coletar_locais_em_threads(self, fonte, amount = 5, thread_n = 1):
+    def coletar_locais_em_threads(self, fonte, amount = 5, thread_n = 5):
         threads = []
 
         for i in range(thread_n):
@@ -102,10 +103,8 @@ class ProxyCollector:
         self.lock = Lock()
 
     def add_proxy(self, proxy: Proxy):
-        with self.lock:
-            if (isinstance(proxy, Proxy)):
-                print(proxy.__str__())
-                self.proxies.append(proxy)
+        if (isinstance(proxy, Proxy)):
+            self.proxies.append(proxy)
 
     def get_proxies(self):
         return self.proxies
@@ -127,32 +126,43 @@ class ProxyCollector:
             print("Erro ao atualizar proxies de http://free-proxy-list.net/")
         
         try:
+            for proxy in Repository.get_thespeedx():
+                test_proxy = Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind"))
+                self.testing_lane.append(test_proxy)
+        except requests.exceptions.RequestException:
+            print("Erro ao atualizar proxies de thespeedx")
+
+        try:
             for proxy in Repository.get_free_proxy_list_net():
                 test_proxy = Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind"))
                 self.testing_lane.append(test_proxy)
         except requests.exceptions.RequestException:
             print("Erro ao atualizar proxies de http://free-proxy.cz/")
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        random.shuffle(self.testing_lane)
+
+        with ThreadPoolExecutor(max_workers=200) as executor:
             executor.map(self.validate_proxies, self.testing_lane)
+
 
         #while len(self.testing_lane) > 0 and proxies
                 
-    def validate_proxies(self, proxy: Proxy):
-
+    def validate_proxies(self, proxy: Proxy, limit=100):
         try:
-            requests.get("https://api64.ipify.org", proxies={ "https": proxy.get(), "http": proxy.get() }, timeout=3)
-            with self.lock:
-                print(f"Proxy adicionado. {proxy.get()}")
-                self.add_proxy(proxy)
+            if len(self.proxies) <= limit:
+                response = requests.get("https://api64.ipify.org", proxies={ "https": proxy.get(), "http": proxy.get() }, timeout=3)
+                print(response.text)
+                with self.lock:
+                    self.add_proxy(proxy)
+                    self.testing_lane.remove(proxy)
+                print(f'Proxy {proxy.get()} validado. {len(self.proxies)}/{limit}({len(self.testing_lane)})')
         except requests.exceptions.Timeout:
             with self.lock:
-                print(f"Proxy lento removido. {proxy.get()}")
                 self.testing_lane.remove(proxy)
         except requests.exceptions.ConnectionError:
             with self.lock:
-                print(f"Proxy não funcional removido. {proxy.get()}")
                 self.testing_lane.remove(proxy)
+            
     
     def __str__(self) -> str:
         return f'Existem no total {len(self.proxies)} proxies armazenados.'
