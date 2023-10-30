@@ -1,6 +1,7 @@
 import requests
 from entities.Empreendimento import Local, LocalContact
 from entities.Proxy import Proxy
+from entities.Session import Session
 import utils.Repository as Repository
 from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor
@@ -43,13 +44,15 @@ class ColetorDeLocais:
         # Aqui você pode adicionar a lógica para obter os objetos Local de uma fonte
         # Por enquanto, vamos retornar uma lista vazia
         locais = []
+        proxy = self.proxy_collector.get_random_proxy()
+        session = Session(proxy)
 
         for i in range(amount):
-            proxy = self.proxy_collector.get_random_proxy()
 
             try:
                 if (fonte == "vivareal"):
-                    response = Repository.get_vivareal_data(proxy, start + i)
+                    response = session.get_vivareal(start + i)
+                    #Repository.get_vivareal_data(proxy, start + i)
 
                     for item in response["body"]:
                         account = item["account"]
@@ -78,7 +81,6 @@ class ColetorDeLocais:
                 print(f'Ocorreu um erro ao se conectar com {fonte}', e)
             except:
                 print('Erro ao obter locais')
-                raise;
 
         print(f'Foram coletados {len(locais)} locais de {fonte}')
         return self.gerenciador.add_locais(locais)
@@ -93,6 +95,13 @@ class ColetorDeLocais:
 
         for t in threads:
             t.join()
+
+        print(self.gerenciador.__str__())
+    
+    def coletar_locais_em_threads_v2(self, fonte, amount = 4, thread_n = 2):
+        with ThreadPoolExecutor(max_workers=thread_n) as executor:
+            for i in range(thread_n):
+                executor.submit(self.obter_locais, fonte, amount, i * amount)
 
         print(self.gerenciador.__str__())
 
@@ -147,10 +156,11 @@ class ProxyCollector:
 
         #while len(self.testing_lane) > 0 and proxies
                 
-    def validate_proxies(self, proxy: Proxy, limit=100):
+    def validate_proxies(self, proxy: Proxy, limit=20):
         try:
             if len(self.proxies) <= limit:
-                response = requests.get("https://api64.ipify.org", proxies={ "https": proxy.get(), "http": proxy.get() }, timeout=3)
+                session = requests.Session()
+                response = session.get("https://api64.ipify.org", proxies={ "https": proxy.get(), "http": proxy.get() }, timeout=3)
                 print(response.text)
                 with self.lock:
                     self.add_proxy(proxy)

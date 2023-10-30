@@ -7,7 +7,6 @@ import base64
 from bs4 import BeautifulSoup
 from entities.Proxy import Proxy
 
-
 def get_ua():
     useragents: List[str] = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 ',
@@ -51,8 +50,7 @@ def get_ua():
 def generate_ip():
     return socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
 
-
-def get_free_proxy_list_net():
+def get_free_proxy_cz():
     response = requests.get("https://free-proxy-list.net/", timeout=2)
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find('table')
@@ -70,7 +68,7 @@ def get_free_proxy_list_net():
     return proxies
 
 
-def get_free_proxy_cz():
+def get_free_proxy_list_net():
     response = requests.get(
         "http://free-proxy.cz/en/proxylist/country/all/socks5/ping/all", timeout=2)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -96,6 +94,28 @@ def get_free_proxy_cz():
             print(proxy)
             proxies.append(proxy)
     return proxies
+
+def get_headers(proxy: Proxy):
+    return {
+        "x-domain": "www.vivareal.com.br",
+        "User-Agent": get_ua(),
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate",
+        "Referer": "www.vivareal.com.br",
+        "Sec-Fetch-Dest": "script",
+        "Sec-Fetch-Mode": "no-cors",
+        "Sec-Fetch-Site": "cross-site",
+
+        "x-forwarded-for": proxy.ip,
+        "X-Originating-IP": proxy.ip,
+        "X-Forwarded-For": proxy.ip,
+        "X-Remote-IP": proxy.ip,
+        "X-Remote-Addr": proxy.ip,
+        "X-Client-IP": proxy.ip,
+        "X-Host": proxy.ip,
+        "X-Forwared-Host": proxy.ip,
+    }
 
 
 def get_thespeedx():
@@ -135,26 +155,7 @@ def get_vivareal_data(proxy: Proxy, page=0, amount=100):
     """
 
     url = "http://glue-api.vivareal.com/v2/listings"
-    headers = {
-        "x-domain": "www.vivareal.com.br",
-        "User-Agent": get_ua(),
-        "Accept": "*/*",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
-        "Referer": "www.vivareal.com.br",
-        "Sec-Fetch-Dest": "script",
-        "Sec-Fetch-Mode": "no-cors",
-        "Sec-Fetch-Site": "cross-site",
-
-        "x-forwarded-for": proxy.ip,
-        "X-Originating-IP": proxy.ip,
-        "X-Forwarded-For": proxy.ip,
-        "X-Remote-IP": proxy.ip,
-        "X-Remote-Addr": proxy.ip,
-        "X-Client-IP": proxy.ip,
-        "X-Host": proxy.ip,
-        "X-Forwared-Host": proxy.ip,
-    }
+    headers = get_headers(proxy)
     querystr = {
         "business": "RENTAL",
         "facets": "amenities",
@@ -181,7 +182,7 @@ def get_vivareal_data(proxy: Proxy, page=0, amount=100):
     session.params = querystr
     response = session.request(
         "GET", url, proxies={"https": proxy.get(), "http": proxy.get()}, timeout=20)
-    print(response.status_code)
+
     serialized_json = response.json()
 
     return {
