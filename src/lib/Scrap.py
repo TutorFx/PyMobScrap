@@ -52,7 +52,6 @@ class ColetorDeLocais:
             try:
                 if (fonte == "vivareal"):
                     response = session.get_vivareal(start + i)
-                    #Repository.get_vivareal_data(proxy, start + i)
 
                     for item in response["body"]:
                         account = item["account"]
@@ -73,9 +72,27 @@ class ColetorDeLocais:
 
                         locais.append(local)
                     
-                if (fonte == "imoveis"):
-                    #blabla
-                    return;
+                if (fonte == "zap"):
+                    response = session.get_zap(start + i)
+
+                    for item in response["body"]:
+                        account = item["account"]
+                        owner = LocalContact(
+                            account.get("name"),
+                            account.get("phones", {}).get("primary"),
+                            account.get("phones", {}).get("mobile"),
+                            account.get("licenseNumber"),
+                            account.get("tier"),
+                        )
+                        local = Local(
+                            item.get("link", {}).get("name"),
+                            item.get("listing", {}).get(
+                                "pricingInfos", [{}])[0].get("price"),
+                            item.get("link", {}).get("href"),
+                            owner
+                        )
+
+                        locais.append(local)
 
             except requests.exceptions.RequestException as e:
                 print(f'Ocorreu um erro ao se conectar com {fonte}', e)
@@ -98,7 +115,7 @@ class ColetorDeLocais:
 
         print(self.gerenciador.__str__())
     
-    def coletar_locais_em_threads_v2(self, fonte, amount = 4, thread_n = 2):
+    def coletar_locais_em_threads_v2(self, fonte, amount = 10, thread_n = 50):
         with ThreadPoolExecutor(max_workers=thread_n) as executor:
             for i in range(thread_n):
                 executor.submit(self.obter_locais, fonte, amount, i * amount)
@@ -156,7 +173,7 @@ class ProxyCollector:
 
         #while len(self.testing_lane) > 0 and proxies
                 
-    def validate_proxies(self, proxy: Proxy, limit=20):
+    def validate_proxies(self, proxy: Proxy, limit=500):
         try:
             if len(self.proxies) <= limit:
                 session = requests.Session()

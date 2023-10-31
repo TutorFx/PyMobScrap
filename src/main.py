@@ -15,6 +15,7 @@ def main():
     print("Collecting Proxyes")
     coletor.proxy_collector.scrap_proxies()
     print("Running...")
+    coletor.coletar_locais_em_threads_v2("zap")
     coletor.coletar_locais_em_threads_v2("vivareal")
 
 

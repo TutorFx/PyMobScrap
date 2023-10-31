@@ -95,14 +95,14 @@ def get_free_proxy_list_net():
             proxies.append(proxy)
     return proxies
 
-def get_headers(proxy: Proxy):
+def get_headers(proxy: Proxy, origin: str):
     return {
-        "x-domain": "www.vivareal.com.br",
+        "x-domain": origin,
         "User-Agent": get_ua(),
         "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.5",
         "Accept-Encoding": "gzip, deflate",
-        "Referer": "www.vivareal.com.br",
+        "Referer": origin,
         "Sec-Fetch-Dest": "script",
         "Sec-Fetch-Mode": "no-cors",
         "Sec-Fetch-Site": "cross-site",
@@ -139,53 +139,3 @@ def get_thespeedx():
         for proxy in get_method(method):
             alldata.append(proxy)
     return alldata
-
-
-def get_vivareal_data(proxy: Proxy, page=0, amount=100):
-    """
-    Essa função espera dois argumentos, o `page` e o `amount`\n
-    Arguments:\n
-        page: inteiro
-        amount: inteiro
-    Returns:\n
-    ```  
-      "body": ...["search"]["result"]["listings"],
-      "page": ...["page"]["uriPagination"],
-    ```
-    """
-
-    url = "http://glue-api.vivareal.com/v2/listings"
-    headers = get_headers(proxy)
-    querystr = {
-        "business": "RENTAL",
-        "facets": "amenities",
-        "unitTypes": "",
-        "unitSubTypes": "",
-        "unitTypesV3": "",
-        "usageTypes": "",
-        "listingType": "USED",
-        "parentId": "null",
-        "categoryPage": "RESULT",
-        "includeFields": "search(result(listings(listing(displayAddressType,amenities,usableAreas,constructionStatus,listingType,description,title,unitTypes,nonActivationReason,propertyType,unitSubTypes,id,portal,parkingSpaces,address,suites,publicationType,externalId,bathrooms,usageTypes,totalAreas,advertiserId,bedrooms,pricingInfos,showPrice,status,advertiserContact,videoTourLink,whatsappNumber,stamps),account(id,name,logoUrl,licenseNumber,showAddress,legacyVivarealId,phones,tier),medias,accountLink,link)),totalCount),page,seasonalCampaigns,fullUriFragments,nearby(search(result(listings(listing(displayAddressType,amenities,usableAreas,constructionStatus,listingType,description,title,unitTypes,nonActivationReason,propertyType,unitSubTypes,id,portal,parkingSpaces,address,suites,publicationType,externalId,bathrooms,usageTypes,totalAreas,advertiserId,bedrooms,pricingInfos,showPrice,status,advertiserContact,videoTourLink,whatsappNumber,stamps),account(id,name,logoUrl,licenseNumber,showAddress,legacyVivarealId,phones,tier),medias,accountLink,link)),totalCount)),expansion(search(result(listings(listing(displayAddressType,amenities,usableAreas,constructionStatus,listingType,description,title,unitTypes,nonActivationReason,propertyType,unitSubTypes,id,portal,parkingSpaces,address,suites,publicationType,externalId,bathrooms,usageTypes,totalAreas,advertiserId,bedrooms,pricingInfos,showPrice,status,advertiserContact,videoTourLink,whatsappNumber,stamps),account(id,name,logoUrl,licenseNumber,showAddress,legacyVivarealId,phones,tier),medias,accountLink,link)),totalCount)),account(id,name,logoUrl,licenseNumber,showAddress,legacyVivarealId,phones,tier,phones),owners(search(result(listings(listing(displayAddressType,amenities,usableAreas,constructionStatus,listingType,description,title,unitTypes,nonActivationReason,propertyType,unitSubTypes,id,portal,parkingSpaces,address,suites,publicationType,externalId,bathrooms,usageTypes,totalAreas,advertiserId,bedrooms,pricingInfos,showPrice,status,advertiserContact,videoTourLink,whatsappNumber,stamps),account(id,name,logoUrl,licenseNumber,showAddress,legacyVivarealId,phones,tier),medias,accountLink,link)),totalCount))",
-        "size": str(amount),
-        "from": str(page * amount),
-        "q": "",
-        "developmentsSize": "5",
-        "__vt": "control",
-        "levels": "LANDING",
-        "ref": "",
-        "pointRadius": "",
-        "isPOIQuery": ""
-    }
-    session = requests.Session()
-    session.headers = headers
-    session.params = querystr
-    response = session.request(
-        "GET", url, proxies={"https": proxy.get(), "http": proxy.get()}, timeout=20)
-
-    serialized_json = response.json()
-
-    return {
-        "body": serialized_json["search"]["result"]["listings"],
-        "page": serialized_json["page"]["uriPagination"],
-    }

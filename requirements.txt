@@ -2,5 +2,3 @@ fastapi==0.100.1
 uvicorn[standard]==0.23.2
 bs4
 requests[socks]
-http[cookiejar]
-progress
