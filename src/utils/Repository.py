@@ -5,6 +5,7 @@ import socket
 import struct
 import base64
 from bs4 import BeautifulSoup
+from entities.Empreendimento import Local, LocalContact
 from entities.Proxy import Proxy
 
 def get_ua():
@@ -139,3 +140,26 @@ def get_thespeedx():
         for proxy in get_method(method):
             alldata.append(proxy)
     return alldata
+
+def glue_api_formatter(response):
+
+    locais = []
+    for item in response["body"]:
+        account = item["account"]
+        owner = LocalContact(
+            account.get("name"),
+            account.get("phones", {}).get("primary"),
+            account.get("phones", {}).get("mobile"),
+            account.get("licenseNumber"),
+            account.get("tier"),
+        )
+        local = Local(
+            item.get("link", {}).get("name"),
+            item.get("listing", {}).get(
+                "pricingInfos", [{}])[0].get("price"),
+            item.get("link", {}).get("href"),
+            owner
+        )
+
+        locais.append(local)
+    return locais

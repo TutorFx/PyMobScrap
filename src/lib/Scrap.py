@@ -53,49 +53,17 @@ class ColetorDeLocais:
                 if (fonte == "vivareal"):
                     response = session.get_vivareal(start + i)
 
-                    for item in response["body"]:
-                        account = item["account"]
-                        owner = LocalContact(
-                            account.get("name"),
-                            account.get("phones", {}).get("primary"),
-                            account.get("phones", {}).get("mobile"),
-                            account.get("licenseNumber"),
-                            account.get("tier"),
-                        )
-                        local = Local(
-                            item.get("link", {}).get("name"),
-                            item.get("listing", {}).get(
-                                "pricingInfos", [{}])[0].get("price"),
-                            item.get("link", {}).get("href"),
-                            owner
-                        )
-
+                    for local in Repository.glue_api_formatter(response):
                         locais.append(local)
                     
                 if (fonte == "zap"):
                     response = session.get_zap(start + i)
 
-                    for item in response["body"]:
-                        account = item["account"]
-                        owner = LocalContact(
-                            account.get("name"),
-                            account.get("phones", {}).get("primary"),
-                            account.get("phones", {}).get("mobile"),
-                            account.get("licenseNumber"),
-                            account.get("tier"),
-                        )
-                        local = Local(
-                            item.get("link", {}).get("name"),
-                            item.get("listing", {}).get(
-                                "pricingInfos", [{}])[0].get("price"),
-                            item.get("link", {}).get("href"),
-                            owner
-                        )
-
+                    for local in Repository.glue_api_formatter(response):
                         locais.append(local)
 
             except requests.exceptions.RequestException as e:
-                print(f'Ocorreu um erro ao se conectar com {fonte}', e)
+                print(f'Ocorreu um erro ao se conectar com {fonte}', e.__cause__)
             except:
                 print('Erro ao obter locais')
 
@@ -167,7 +135,7 @@ class ProxyCollector:
 
         random.shuffle(self.testing_lane)
 
-        with ThreadPoolExecutor(max_workers=200) as executor:
+        with ThreadPoolExecutor(max_workers=250) as executor:
             executor.map(self.validate_proxies, self.testing_lane)
 
 
@@ -176,9 +144,9 @@ class ProxyCollector:
     def validate_proxies(self, proxy: Proxy, limit=500):
         try:
             if len(self.proxies) <= limit:
-                session = requests.Session()
-                response = session.get("https://api64.ipify.org", proxies={ "https": proxy.get(), "http": proxy.get() }, timeout=3)
-                print(response.text)
+                session = Session(proxy)
+                session.get_vivareal(amount=0, timeout=3)
+                session.get_zap(amount=0, timeout=3)
                 with self.lock:
                     self.add_proxy(proxy)
                     self.testing_lane.remove(proxy)
