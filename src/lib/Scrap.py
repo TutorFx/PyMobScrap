@@ -44,8 +44,7 @@ class ColetorDeLocais:
         # Aqui você pode adicionar a lógica para obter os objetos Local de uma fonte
         # Por enquanto, vamos retornar uma lista vazia
         locais = []
-        proxy = self.proxy_collector.get_random_proxy()
-        session = Session(proxy)
+        session = self.proxy_collector.get_random_session()
 
         for i in range(amount):
 
@@ -70,7 +69,7 @@ class ColetorDeLocais:
         print(f'Foram coletados {len(locais)} locais de {fonte}')
         return self.gerenciador.add_locais(locais)
 
-    def coletar_locais_em_threads(self, fonte, amount = 5, thread_n = 5):
+    def coletar_locais_em_threads(self, fonte, amount = 10, thread_n = 5):
         threads = []
 
         for i in range(thread_n):
@@ -92,23 +91,23 @@ class ColetorDeLocais:
 
 class ProxyCollector:
     def __init__(self):
-        self.proxies = []
+        self.sessions = []
         self.testing_lane = []
         self.lock = Lock()
 
-    def add_proxy(self, proxy: Proxy):
-        if (isinstance(proxy, Proxy)):
-            self.proxies.append(proxy)
+    def add_session(self, session: Session):
+        if (isinstance(session, Session)):
+            self.sessions.append(session)
 
     def get_proxies(self):
-        return self.proxies
+        return self.sessions
     
-    def get_random_proxy(self):
-        if len(self.proxies) == 0:
+    def get_random_session(self):
+        if len(self.sessions) == 0:
             print("Não existem proxies armazenados")
             raise Exception("Não existem proxies válidos")
 
-        return random.choice(self.proxies)
+        return random.choice(self.sessions)
     
     def scrap_proxies(self):
 
@@ -141,16 +140,16 @@ class ProxyCollector:
 
         #while len(self.testing_lane) > 0 and proxies
                 
-    def validate_proxies(self, proxy: Proxy, limit=500):
+    def validate_proxies(self, proxy: Proxy, limit=10):
         try:
-            if len(self.proxies) <= limit:
+            if len(self.sessions) <= limit:
                 session = Session(proxy)
                 session.get_vivareal(amount=0, timeout=3)
                 session.get_zap(amount=0, timeout=3)
                 with self.lock:
-                    self.add_proxy(proxy)
+                    self.add_session(session)
                     self.testing_lane.remove(proxy)
-                print(f'Proxy {proxy.get()} validado. {len(self.proxies)}/{limit}({len(self.testing_lane)})')
+                print(f'Proxy {proxy.get()} validado. {len(self.sessions)}/{limit}({len(self.testing_lane)})')
         except requests.exceptions.Timeout:
             with self.lock:
                 self.testing_lane.remove(proxy)
@@ -160,4 +159,4 @@ class ProxyCollector:
             
     
     def __str__(self) -> str:
-        return f'Existem no total {len(self.proxies)} proxies armazenados.'
+        return f'Existem no total {len(self.sessions)} proxies armazenados.'
