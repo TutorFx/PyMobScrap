@@ -51,8 +51,8 @@ def get_ua():
 def generate_ip():
     return socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
 
-def get_free_proxy_cz():
-    response = requests.get("https://free-proxy-list.net/", timeout=2)
+def get_proxy_blue():
+    response = requests.get("https://free-proxy-list.net/", timeout=4)
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find('table')
     proxies = []
@@ -69,14 +69,13 @@ def get_free_proxy_cz():
     return proxies
 
 
-def get_free_proxy_list_net():
+def get_proxy_cz():
     response = requests.get(
-        "http://free-proxy.cz/en/proxylist/country/all/socks5/ping/all", timeout=2)
+        "http://free-proxy.cz/en/proxylist/country/all/socks5/ping/all", timeout=4)
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find('tbody')
     proxies = []
     rules = table.find_all('tr')
-    print('passou')
     for row in rules:
         columns = [e.text for e in row.find_all("td")]
         if len(columns) < 10:
@@ -85,14 +84,12 @@ def get_free_proxy_list_net():
             ip = row.find("script")
             ip = str(ip).split("(\"")[-1].split("\")")[0]
             ip = base64.b64decode(ip.encode("utf-8")).decode("utf-8")
-            print(ip)
 
             proxy = {
                 'ip': ip,
                 'port': columns[1],
                 'kind': columns[2].lower()
             }
-            print(proxy)
             proxies.append(proxy)
     return proxies
 
@@ -125,7 +122,7 @@ def get_thespeedx():
 
     def get_method(method):
         url = f"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/{method}.txt"
-        response = requests.get(url)
+        response = requests.get(url, timeout=2)
         proxy_list = response.text.split('\n')
         proxies = []
         for proxy in proxy_list:

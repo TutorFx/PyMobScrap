@@ -9,9 +9,15 @@ class LocalContact:
         self.celular = celular
         self.cresci = cresci
         self.tier = tier
-
-    def __str__(self):
-        return f'Nome: {self.nome} e telefone {self.telefone} e celular {self.celular}'
+    
+    def to_dict(self):
+        return {
+            "nome": self.nome,
+            "telefone": self.telefone,
+            "celular": self.celular,
+            "cresci": self.cresci,
+            "tier": self.tier,
+        }
 
 class Local:
     """Local Class"""
@@ -21,3 +27,21 @@ class Local:
         self.url = url
         self.owner = owner
         self.time = time
+
+    def to_dict(self):
+        return {
+            "nome": self.nome,
+            "preco": self.preco,
+            "url": self.url,
+            "owner": self.owner.to_dict(),
+            "time": self.time,
+        }
+    
+    @staticmethod
+    def from_dict(dict_obj):
+        owner = LocalContact(**dict_obj['owner'])
+        return Local(owner=owner, **{k: v for k, v in dict_obj.items() if k != 'owner'})
+
+def mock_local():
+    contact = LocalContact(nome="Teste", telefone="(11) 1111-1111", celular="(11) 1111-1111", cresci="Teste")
+    return Local(nome="Teste", preco="Teste", url="Teste", owner=contact)

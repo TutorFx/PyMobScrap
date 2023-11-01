@@ -2,7 +2,7 @@
 
 def get_vivareal_params(page, amount, state=None, city=None):
     querystr = {
-      "business": "RENTAL",
+      "business": "SALE",
       "addressCity": city,
       "addressState": state,
       "facets": "amenities",
@@ -28,7 +28,7 @@ def get_vivareal_params(page, amount, state=None, city=None):
 
 def get_zap_params(page, amount, state=None, city=None):
     querystr = {
-      "business": "RENTAL",
+      "business": "SALE",
       "addressCity": city,
       "addressState": state,
       "facets": "amenities",

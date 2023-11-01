@@ -12,11 +12,14 @@ import lib.Scrap as Scrap
 def main():
     """ Main entry point of the app """
     coletor = Scrap.ColetorDeLocais()
+    coletor.gerenciador.carregar_locais()
+    print(coletor.gerenciador)
     print("Collecting Proxyes")
     coletor.proxy_collector.scrap_proxies()
     print("Running...")
     coletor.coletar_locais_em_threads_v2("zap")
     coletor.coletar_locais_em_threads_v2("vivareal")
+    coletor.gerenciador.salvar_locais()
 
 
 
