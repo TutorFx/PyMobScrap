@@ -148,6 +148,8 @@ class ProxyCollector:
     
         # Ordena as sessões primeiro por disponibilidade (disponíveis primeiro) e depois por número de erros (menos erros primeiro)
         self.sessions.sort(key=lambda s: (-s.is_available(), s.errors))
+        # Remove da lista os piores proxies (com mais erros)
+        self.sessions = list(filter(lambda s: s.errors <= 6, self.sessions))
         
         available_sessions = [s for s in self.sessions if s.is_available()]
         unavailable_sessions = [s for s in self.sessions if not s.is_available()]
