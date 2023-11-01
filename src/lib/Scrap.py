@@ -121,7 +121,7 @@ class ColetorDeLocais:
         print(f'Foram coletados {len(locais)} locais de {fonte}')
         return self.gerenciador.add_locais(locais)
     
-    def coletar_locais_em_threads_v2(self, fonte, amount = 10, thread_n = 25):
+    def coletar_locais_em_threads_v2(self, fonte, amount = 10, thread_n = 60):
         with ThreadPoolExecutor(max_workers=thread_n) as executor:
             for i in range(thread_n):
                 executor.submit(self.obter_locais, fonte, amount, i * amount)
@@ -145,8 +145,17 @@ class ProxyCollector:
         if len(self.sessions) == 0:
             print("Não existem proxies armazenados")
             raise Exception("Não existem proxies válidos")
+    
+        # Ordena as sessões primeiro por disponibilidade (disponíveis primeiro) e depois por número de erros (menos erros primeiro)
+        self.sessions.sort(key=lambda s: (-s.is_available(), s.errors))
+        
+        available_sessions = [s for s in self.sessions if s.is_available()]
+        unavailable_sessions = [s for s in self.sessions if not s.is_available()]
 
-        return random.choice(self.sessions)
+        if available_sessions:
+            return random.choice(available_sessions)
+        else:
+            return random.choice(unavailable_sessions)
     
     def scrap_proxies(self):
 
