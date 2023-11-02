@@ -6,7 +6,11 @@ import struct
 import base64
 from bs4 import BeautifulSoup
 from entities.Empreendimento import Local, LocalContact
-from entities.Proxy import Proxy
+from entities.Proxy import Proxy, PremiumProxy
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_ua():
     useragents: List[str] = [
@@ -65,7 +69,16 @@ def get_proxy_blue():
                 'port': columns[1].text,
                 'kind': 'https' if columns[6].text == 'yes' else 'http'
             }
-            proxies.append(proxy)
+            proxies.append(Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
+    return proxies
+
+def get_froxy():
+    proxies: List[PremiumProxy]  = []
+    login = os.getenv('FROXY_LOGIN')
+    password = os.getenv('FROXY_PASSWORD')
+    for port in range(1000):
+        proxies.append(PremiumProxy('fast.froxy.com', 10000 + port, "http", login, password))
+        proxies.append(PremiumProxy('fast.froxy.com', 10000 + port, "socks5", login, password))
     return proxies
 
 
@@ -90,7 +103,8 @@ def get_proxy_cz():
                 'port': columns[1],
                 'kind': columns[2].lower()
             }
-            proxies.append(proxy)
+            proxies.append(Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
+            
     return proxies
 
 def get_headers(proxy: Proxy, origin: str):
@@ -135,7 +149,7 @@ def get_thespeedx():
         return proxies
     for method in methods:
         for proxy in get_method(method):
-            alldata.append(proxy)
+            alldata.append(Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
     return alldata
 
 def glue_api_formatter(response):

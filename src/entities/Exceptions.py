@@ -1,0 +1,2 @@
+class NoValidProxies(Exception):
+    pass;
