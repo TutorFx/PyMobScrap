@@ -18,9 +18,10 @@ def main():
     coletor.proxy_collector.scrap_proxies()
     print("Running...")
     coletor.set_estado("São Paulo")
-    coletor.set_cidade("Hortolândia")
-    coletor.coletar_locais_em_threads_v2("zap", 70) # 500x100
-    coletor.coletar_locais_em_threads_v2("vivareal", 70)
+    coletor.set_cidade("Campinas")
+    coletor.enfileirar_locais("zap", 5) # 500x100
+    coletor.enfileirar_locais("vivareal", 22)
+    coletor.processar_fila()
     coletor.gerenciador.salvar_locais()
 
 

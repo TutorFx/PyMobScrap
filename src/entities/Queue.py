@@ -1,9 +1,10 @@
 from typing import List
 
 class QueueItem:
-  def __init__(self, origin: str, page: int):
+  def __init__(self, origin: str, page: int, amount):
     self.origin = origin
     self.page = page
+    self.amount = amount
     print(f"Item de fila criado: {self.origin}, ({self.page})")
 
 class Queue:

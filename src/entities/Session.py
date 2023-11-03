@@ -1,10 +1,11 @@
 import datetime
+from types import NoneType
 from typing import List
 from entities.Exceptions import NoValidProxies
 from entities.Proxy import Proxy
 from threading import Thread, Lock
 from entities.Empreendimento import Local
-
+import orjson
 import requests
 
 import utils.Repository as Repository
@@ -70,11 +71,14 @@ class Session:
         """
         response = self.get("http://glue-api.vivareal.com/v2/listings", params=Params.get_vivareal_params(page, amount, estado, cidade), headers=Repository.get_headers(self.proxy, 'www.vivareal.com.br'), timeout=timeout)
         
-        serialized_json = response.json()
+        serialized_json = orjson.loads(response.text)
+
+        if (isinstance(serialized_json, NoneType)):
+            return []
 
         formatted = {
-            "body": serialized_json["search"]["result"]["listings"],
-            "page": serialized_json["page"]["uriPagination"],
+            "body": serialized_json.get('search', {}).get('result', {}).get('listings', None),
+            "page": serialized_json.get('page', {}).get('uriPagination', {}),
         }
 
         locais: List[Local] = []
@@ -100,12 +104,18 @@ class Session:
         """
         response = self.get("http://glue-api.zapimoveis.com.br/v2/listings", params=Params.get_vivareal_params(page, amount, estado, cidade), headers=Repository.get_headers(self.proxy, 'https://www.zapimoveis.com.br'), timeout=timeout)
         
-        serialized_json = response.json()
 
+        serialized_json = orjson.loads(response.text)
+
+        if (isinstance(serialized_json, NoneType)):
+            print(response, page, amount)
+            return []
+        
         formatted = {
-            "body": serialized_json["search"]["result"]["listings"],
-            "page": serialized_json["page"]["uriPagination"],
+            "body": serialized_json.get('search', {}).get('result', {}).get('listings', None),
+            "page": serialized_json.get('page', {}).get('uriPagination', {}),
         }
+
 
         locais: List[Local] = []
         

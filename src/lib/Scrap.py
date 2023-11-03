@@ -3,15 +3,16 @@ from types import NoneType
 from typing import List, Union
 import requests
 from entities.Empreendimento import Local, LocalContact, mock_local
-from entities.Exceptions import NoValidProxies
+from entities.Exceptions import NoValidData, NoValidProxies
 from entities.Queue import Queue, QueueItem
 from entities.Proxy import PremiumProxy, Proxy
 from entities.Session import Session
 import utils.Repository as Repository
 from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import json
+import orjson
 import random
+import traceback
 
 class GerenciadorDeLocais:
     def __init__(self):
@@ -41,9 +42,10 @@ class GerenciadorDeLocais:
         if not os.path.isfile(self.storage):
             # Se não existir, cria o arquivo
             with open(self.storage, 'w') as file: 
-                json.dump([], file)
+                file.write("[]")
         with open(self.storage, 'r') as file:
-            locais_dict = json.load(file)
+            locais_json = file.read()
+            locais_dict = orjson.loads(locais_json)
             self.locais = [Local.from_dict(local_dict) for local_dict in locais_dict]
     
     def salvar_locais(self):
@@ -51,10 +53,11 @@ class GerenciadorDeLocais:
             if not os.path.isfile(self.storage):
                 # Se não existir, cria o arquivo
                 with open(self.storage, 'w') as file: 
-                    json.dump([], file)
+                    file.write("[]")
             with open(self.storage, 'w') as file:
                 locais_dict = [local.to_dict() for local in self.locais]
-                json.dump(locais_dict, file)
+                locais_json = orjson.dumps(locais_dict)
+                file.write(locais_json.decode())
     
     def __str__(self) -> str:
         return f'Existem no total {len(self.locais)} locais armazenados no Gerenciador.'
@@ -89,11 +92,16 @@ class ColetorDeLocais:
         for _ in range(30):
             try: 
                 if (i.origin == "vivareal"):
-                    locais += session.get_vivareal(self.estado, self.cidade, i.page)
+                    locais += session.get_vivareal(self.estado, self.cidade, i.page, i.amount)
 
                 if (i.origin == "zap"):
-                    locais += session.get_zap(self.estado, self.cidade, i.page)
-                print(f"Sucesso ao coletar dados de {i.origin}. ({session.errors}x de score) ({len(self.proxy_collector.sessions)}x Proxies ativos)")
+                    locais += session.get_zap(self.estado, self.cidade, i.page, i.amount)
+                
+                print(f"Sucesso ao coletar dados de {i.origin}. ({session.errors}x de score) ({len(self.proxy_collector.sessions)}x Proxies ativos) ({len(locais)}x locais capturados)")
+                
+                if (len(locais) == 0):
+                    print(f"Nenhum local foi encontrado para {i.origin}, p{i.page * i.amount} a{i.amount}")
+                    raise NoValidData;
                 return locais
             
             except requests.exceptions.ProxyError:
@@ -114,26 +122,30 @@ class ColetorDeLocais:
                 session = self.proxy_collector.get_random_session()
             except NoValidProxies as e:
                 print("Não existe nenhum proxy válido para a tarefa")
-            except Exception as e:
-                print(f'Erro ao obter locais ({_})', e.__str__(), e.__traceback__())
-    
-    def coletar_locais_em_threads_v2(self, fonte, amount = 1700, thread_n = 30):
+            except NoValidData as e:
+                print("Não foi possível obter dados válidos")
+            except Exception:
+                traceback.print_exc()
 
+    def enfileirar_locais(self, fonte, quantity = 10, amount = 100):
         print(f"Coletando locais de {fonte}")
-        for page in range(amount):
-            self.queue.add_item(QueueItem(fonte, page))
+        for page in range(quantity):
+            self.queue.add_item(QueueItem(fonte, page, amount))
+        random.shuffle(self.queue.items)
 
-
+    def processar_fila(self, thread_n = 5):
         with ThreadPoolExecutor(max_workers=thread_n) as executor:
             futures = {executor.submit(self.obter_locais_v2, item) for item in self.queue.items}
             try:
                 for future in as_completed(futures):
                     response = future.result()
                     if (isinstance(response, NoneType)):
+                        print("Nenhum local foi retornado")
                         return;
                     self.gerenciador.add_locais(response)
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print("An error occurred:", e.__repr__())
+                traceback.print_exc()
 
         print(self.gerenciador.__str__())
 
@@ -170,13 +182,12 @@ class ProxyCollector:
     
     def scrap_proxies(self):
 
-        """
+        
         try:
             self.testing_lane += Repository.get_froxy()
         except requests.exceptions.ConnectionError:
             print("Erro ao atualizar de froxy")
-        """
-
+        
         try:
             self.testing_lane += Repository.get_proxy_blue()
         except requests.exceptions.ConnectionError:
@@ -201,7 +212,7 @@ class ProxyCollector:
         
         #while len(self.testing_lane) > 0 and proxies
                 
-    def validate_proxies(self, proxy: Proxy, limit=100):
+    def validate_proxies(self, proxy: Proxy, limit=50):
         try:
             if len(self.sessions) <= limit:
                 proxy_s = proxy.get()

@@ -15,9 +15,7 @@ load_dotenv()
 def get_ua():
     useragents: List[str] = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 ',
-        'Safari/537.36',
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 ',
-        'Safari/537.36',
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 ',
         'Safari/537.36',
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0',
@@ -114,6 +112,7 @@ def get_headers(proxy: Proxy, origin: str):
         "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.5",
         "Accept-Encoding": "gzip, deflate",
+        "Content-Type": "application/json; charset=utf-8",
         "Referer": origin,
         "Sec-Fetch-Dest": "script",
         "Sec-Fetch-Mode": "no-cors",
@@ -155,8 +154,11 @@ def get_thespeedx():
 def glue_api_formatter(response):
 
     locais = []
-    for item in response["body"]:
-        account = item["account"]
+    body = response.get("body", {})
+    if not body:
+        return locais
+    for item in body:
+        account = item.get("account", {})
         owner = LocalContact(
             account.get("name"),
             account.get("phones", {}).get("primary"),
