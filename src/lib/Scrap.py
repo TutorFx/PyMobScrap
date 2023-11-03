@@ -178,21 +178,18 @@ class ProxyCollector:
         if available_sessions:
             return available_sessions[0]
         else:
-            return unavailable_sessions[0]
-    
+            return unavailable_sessions[0]  
     def scrap_proxies(self):
-
-        
+        """
         try:
             self.testing_lane += Repository.get_froxy()
         except requests.exceptions.ConnectionError:
             print("Erro ao atualizar de froxy")
-        
+        """
         try:
             self.testing_lane += Repository.get_proxy_blue()
         except requests.exceptions.ConnectionError:
             print("Erro ao atualizar proxies de http://free-proxy-list.net/")
-        
         try:
             self.testing_lane += Repository.get_thespeedx()
         except requests.exceptions.ConnectionError:
@@ -202,16 +199,10 @@ class ProxyCollector:
             self.testing_lane += Repository.get_proxy_cz()
         except requests.exceptions.ConnectionError:
             print("Erro ao atualizar proxies de http://free-proxy.cz/")
-        
-
         random.shuffle(self.testing_lane)
 
         with ThreadPoolExecutor(max_workers=200) as executor:
-            executor.map(self.validate_proxies, self.testing_lane)
-
-        
-        #while len(self.testing_lane) > 0 and proxies
-                
+            executor.map(self.validate_proxies, self.testing_lane)          
     def validate_proxies(self, proxy: Proxy, limit=50):
         try:
             if len(self.sessions) <= limit:

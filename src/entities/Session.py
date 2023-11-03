@@ -1,10 +1,13 @@
 import datetime
 from types import NoneType
 from typing import List
+import orjson
+import requests
 from entities.Exceptions import NoValidProxies
 from entities.Proxy import Proxy
 from threading import Thread, Lock
 from entities.Empreendimento import Local
+import re
 import orjson
 import requests
 
@@ -45,7 +48,7 @@ class Session:
         except NoValidProxies as e:
             with self.lock:
                 self.errors += 1
-            raise e  
+            raise e
         finally:
             print(f'Proxy {proxy_ip} com {self.errors} erros.')
 
@@ -53,7 +56,7 @@ class Session:
         if self.last_used is None:
             return None
         return (datetime.datetime.now() - self.last_used).total_seconds()
-    
+
     def is_available(self, timeout=40):
         return self.seconds_since_last_request() is None or self.seconds_since_last_request() > timeout + 3
 
@@ -69,9 +72,18 @@ class Session:
           "page": ...["page"]["uriPagination"],
         ```
         """
-        response = self.get("http://glue-api.vivareal.com/v2/listings", params=Params.get_vivareal_params(page, amount, estado, cidade), headers=Repository.get_headers(self.proxy, 'www.vivareal.com.br'), timeout=timeout)
-        
-        serialized_json = orjson.loads(response.text)
+        response = self.get("http://glue-api.vivareal.com/v2/listings", params=Params.get_vivareal_params(
+            page, amount, estado, cidade), headers=Repository.get_headers(self.proxy, 'www.vivareal.com.br'), timeout=timeout)
+        emoji_pattern = re.compile("["
+                    u"\U0001F600-\U0001F64F"  # emoticons
+                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                    u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                    u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                    u"\U00002702-\U000027B0"
+                    u"\U000024C2-\U0001F251"
+                    "]+", flags=re.UNICODE)
+        response = emoji_pattern.sub(r'', response.text)
+        serialized_json = orjson.loads(response)
 
         if (isinstance(serialized_json, NoneType)):
             return []
@@ -82,14 +94,11 @@ class Session:
         }
 
         locais: List[Local] = []
-        
-        for local in Repository.glue_api_formatter(formatted):
+        for local in Repository.glue_api_formatter(formatted, 'Vivareal'):
             locais.append(local)
-        
-        
+
         return locais
-    
-    
+
     def get_zap(self, estado, cidade, page=0, amount=100, timeout=40):
         """
         Essa função espera dois argumentos, o `page` e o `amount`\n
@@ -102,10 +111,19 @@ class Session:
           "page": ...["page"]["uriPagination"],
         ```
         """
-        response = self.get("http://glue-api.zapimoveis.com.br/v2/listings", params=Params.get_vivareal_params(page, amount, estado, cidade), headers=Repository.get_headers(self.proxy, 'https://www.zapimoveis.com.br'), timeout=timeout)
-        
+        response = self.get("http://glue-api.zapimoveis.com.br/v2/listings", params=Params.get_vivareal_params(page, amount,
+                            estado, cidade), headers=Repository.get_headers(self.proxy, 'https://www.zapimoveis.com.br'), timeout=timeout)
+        emoji_pattern = re.compile("["
+                    u"\U0001F600-\U0001F64F"  # emoticons
+                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                    u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                    u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                    u"\U00002702-\U000027B0"
+                    u"\U000024C2-\U0001F251"
+                    "]+", flags=re.UNICODE)
+        response = emoji_pattern.sub(r'', response.text)
 
-        serialized_json = orjson.loads(response.text)
+        serialized_json = orjson.loads(response)
 
         if (isinstance(serialized_json, NoneType)):
             print(response, page, amount)
@@ -116,10 +134,9 @@ class Session:
             "page": serialized_json.get('page', {}).get('uriPagination', {}),
         }
 
-
         locais: List[Local] = []
-        
-        for local in Repository.glue_api_formatter(formatted):
+
+        for local in Repository.glue_api_formatter(formatted, "Zap"):
             locais.append(local)
-        
+
         return locais

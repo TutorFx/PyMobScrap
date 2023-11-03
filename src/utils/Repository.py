@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def get_ua():
     useragents: List[str] = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 ',
@@ -50,8 +51,10 @@ def get_ua():
     ]
     return random.choice(useragents)
 
+
 def generate_ip():
     return socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
+
 
 def get_proxy_blue():
     response = requests.get("https://free-proxy-list.net/", timeout=4)
@@ -67,16 +70,20 @@ def get_proxy_blue():
                 'port': columns[1].text,
                 'kind': 'https' if columns[6].text == 'yes' else 'http'
             }
-            proxies.append(Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
+            proxies.append(
+                Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
     return proxies
 
+
 def get_froxy():
-    proxies: List[PremiumProxy]  = []
+    proxies: List[PremiumProxy] = []
     login = os.getenv('FROXY_LOGIN')
     password = os.getenv('FROXY_PASSWORD')
     for port in range(1000):
-        proxies.append(PremiumProxy('fast.froxy.com', 10000 + port, "http", login, password))
-        proxies.append(PremiumProxy('fast.froxy.com', 10000 + port, "socks5", login, password))
+        proxies.append(PremiumProxy('fast.froxy.com',
+                       10000 + port, "http", login, password))
+        proxies.append(PremiumProxy('fast.froxy.com', 10000 +
+                       port, "socks5", login, password))
     return proxies
 
 
@@ -101,9 +108,11 @@ def get_proxy_cz():
                 'port': columns[1],
                 'kind': columns[2].lower()
             }
-            proxies.append(Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
-            
+            proxies.append(
+                Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
+
     return proxies
+
 
 def get_headers(proxy: Proxy, origin: str):
     return {
@@ -134,7 +143,8 @@ def get_thespeedx():
     alldata = []
 
     def get_method(method):
-        url = f"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/{method}.txt"
+        url = f"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/{
+            method}.txt"
         response = requests.get(url, timeout=2)
         proxy_list = response.text.split('\n')
         proxies = []
@@ -148,10 +158,12 @@ def get_thespeedx():
         return proxies
     for method in methods:
         for proxy in get_method(method):
-            alldata.append(Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
+            alldata.append(
+                Proxy(proxy.get("ip"), proxy.get("port"), proxy.get("kind")))
     return alldata
 
-def glue_api_formatter(response):
+
+def glue_api_formatter(response, origin: str):
 
     locais = []
     body = response.get("body", {})
@@ -171,8 +183,12 @@ def glue_api_formatter(response):
             item.get("listing", {}).get(
                 "pricingInfos", [{}])[0].get("price"),
             item.get("link", {}).get("href"),
-            owner
+            owner,
+            item.get("listing", {}).get("address", {}).get("zipCode"),
+            origin,
+            item.get("listing", {}).get("address", {}).get("point", {}).get("lat"),
+            item.get("listing", {}).get("address", {}).get("point", {}).get("lon"),
         )
-
+        print(local.to_dict())
         locais.append(local)
     return locais
