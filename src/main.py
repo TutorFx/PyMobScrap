@@ -15,13 +15,13 @@ def main():
     coletor.gerenciador.carregar_locais()
     print(coletor.gerenciador)
     print("Collecting Proxyes")
-    coletor.proxy_collector.scrap_proxies()
+    coletor.proxy_collector.scrap_proxies(800, 250)
     print("Running...")
     coletor.set_estado("São Paulo")
     coletor.set_cidade("Campinas")
-    coletor.enfileirar_locais("zap", 5) # 500x100
-    coletor.enfileirar_locais("vivareal", 22)
-    coletor.processar_fila()
+    coletor.enfileirar_locais("vivareal", 2230)
+    coletor.enfileirar_locais("zap", 502) # 500x100
+    coletor.processar_fila(40)
     coletor.gerenciador.salvar_locais()
 
 

@@ -131,7 +131,7 @@ class ColetorDeLocais:
         print(f"Coletando locais de {fonte}")
         for page in range(quantity):
             self.queue.add_item(QueueItem(fonte, page, amount))
-        random.shuffle(self.queue.items)
+        #random.shuffle(self.queue.items)
 
     def processar_fila(self, thread_n = 5):
         with ThreadPoolExecutor(max_workers=thread_n) as executor:
@@ -179,7 +179,7 @@ class ProxyCollector:
             return available_sessions[0]
         else:
             return unavailable_sessions[0]  
-    def scrap_proxies(self):
+    def scrap_proxies(self, amount = 200, workers = 200):
         """
         try:
             self.testing_lane += Repository.get_froxy()
@@ -194,16 +194,15 @@ class ProxyCollector:
             self.testing_lane += Repository.get_thespeedx()
         except requests.exceptions.ConnectionError:
             print("Erro ao atualizar proxies de thespeedx")
-
         try:
             self.testing_lane += Repository.get_proxy_cz()
         except requests.exceptions.ConnectionError:
             print("Erro ao atualizar proxies de http://free-proxy.cz/")
         random.shuffle(self.testing_lane)
 
-        with ThreadPoolExecutor(max_workers=200) as executor:
-            executor.map(self.validate_proxies, self.testing_lane)          
-    def validate_proxies(self, proxy: Proxy, limit=50):
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            executor.map(self.validate_proxies, self.testing_lane )          
+    def validate_proxies(self, proxy: Proxy, limit=200):
         try:
             if len(self.sessions) <= limit:
                 proxy_s = proxy.get()

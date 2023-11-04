@@ -7,9 +7,9 @@ from entities.Exceptions import NoValidProxies
 from entities.Proxy import Proxy
 from threading import Thread, Lock
 from entities.Empreendimento import Local
-import re
 import orjson
 import requests
+import json
 
 import utils.Repository as Repository
 import utils.Params as Params
@@ -74,16 +74,11 @@ class Session:
         """
         response = self.get("http://glue-api.vivareal.com/v2/listings", params=Params.get_vivareal_params(
             page, amount, estado, cidade), headers=Repository.get_headers(self.proxy, 'www.vivareal.com.br'), timeout=timeout)
-        emoji_pattern = re.compile("["
-                    u"\U0001F600-\U0001F64F"  # emoticons
-                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-                    u"\U0001F680-\U0001F6FF"  # transport & map symbols
-                    u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-                    u"\U00002702-\U000027B0"
-                    u"\U000024C2-\U0001F251"
-                    "]+", flags=re.UNICODE)
-        response = emoji_pattern.sub(r'', response.text)
-        serialized_json = orjson.loads(response)
+        
+        if (response.status_code == 400):
+            print(response.text)
+        
+        serialized_json = json.loads(response.text)
 
         if (isinstance(serialized_json, NoneType)):
             return []
@@ -113,17 +108,10 @@ class Session:
         """
         response = self.get("http://glue-api.zapimoveis.com.br/v2/listings", params=Params.get_vivareal_params(page, amount,
                             estado, cidade), headers=Repository.get_headers(self.proxy, 'https://www.zapimoveis.com.br'), timeout=timeout)
-        emoji_pattern = re.compile("["
-                    u"\U0001F600-\U0001F64F"  # emoticons
-                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-                    u"\U0001F680-\U0001F6FF"  # transport & map symbols
-                    u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-                    u"\U00002702-\U000027B0"
-                    u"\U000024C2-\U0001F251"
-                    "]+", flags=re.UNICODE)
-        response = emoji_pattern.sub(r'', response.text)
-
-        serialized_json = orjson.loads(response)
+        if (response.status_code == 400):
+            print(response.text)
+        
+        serialized_json = json.loads(response.text)
 
         if (isinstance(serialized_json, NoneType)):
             print(response, page, amount)
@@ -133,6 +121,8 @@ class Session:
             "body": serialized_json.get('search', {}).get('result', {}).get('listings', None),
             "page": serialized_json.get('page', {}).get('uriPagination', {}),
         }
+
+        print(formatted["page"])
 
         locais: List[Local] = []
 
